@@ -8,11 +8,11 @@ const COMPANY_TABLE_NAME = process.env.COMPANY_TABLE_NAME
 const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME
 const ATTENDANCE_TABLE_NAME = process.env.ATTENDANCE_TABLE_NAME
 
-// AWS.config.update({
-//     region: process.env.AWS_DEFAULT_REGION,
-//     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-//     secretAccessKey: process.env.AWS_SECRET_KEY_ID
-// })
+AWS.config.update({
+    region: process.env.AWS_DEFAULT_REGION,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_KEY_ID
+})
 
 const docClient = new AWS.DynamoDB.DocumentClient();
 

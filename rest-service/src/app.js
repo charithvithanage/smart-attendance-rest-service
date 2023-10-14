@@ -9,12 +9,6 @@ require('dotenv').config();
 
 const port = process.env.PORT || 3000;
 
-// AWS.config.update({
-//     region: process.env.AWS_DEFAULT_REGION,
-//     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-//     secretAccessKey: process.env.AWS_SECRET_KEY_ID
-// })
-
 app.use(bodyParser.json());
 
 // Define a route to handle user login
@@ -30,6 +24,7 @@ app.post('/admin/login', async (req, res) => {
             res.json({ success: false, message: 'Invalid credentials' });
         }
     } catch (error) {
+        console.log(error)
         res.status(500).json({ error: 'Error processing request' });
     }
 });
@@ -361,9 +356,9 @@ app.get('/version', async (req, res) => {
 });
 
 // Start the Express app
-// app.listen(port, () => {
-//     console.log(`App listening at http://localhost:${port}`);
-// });
+app.listen(port, () => {
+    console.log(`App listening at http://localhost:${port}`);
+});
 
 // Export your express server so you can import it in the lambda function.
 module.exports = app

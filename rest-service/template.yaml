@@ -23,16 +23,6 @@ Resources:
       Policies:
         - AWSLambdaBasicExecutionRole
         - AmazonDynamoDBFullAccess
-        # - S3FullAccessPolicy:
-        #     BucketName: smartpay-files
-        # - S3FullAccessPolicy:
-        #     BucketName: smartpay-images
-        # - SESCrudPolicy:
-        #     IdentityName: smartpay.lk
-        # - LambdaInvokePolicy:
-        #     FunctionName: PurchaseEvoucher-Test
-        # - LambdaInvokePolicy:
-        #     FunctionName: LifeRequestPurchaseEvoucher-Test
       Events:
         Requests:
           Type: HttpApi

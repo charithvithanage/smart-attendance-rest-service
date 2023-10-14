@@ -1,4 +1,5 @@
-rest-service/src/.env
 rest-service/dist
-gitignore
-node_modules
+rest-service/node_modules
+rest-service/.env
+rest-service/.vscode
+.vscode
