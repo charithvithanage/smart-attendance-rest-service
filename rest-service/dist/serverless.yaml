@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Globals:
+  Function:
+    Environment:
+      Variables:
+        Version: 0.0.1
+        ADMIN_USERS_TABLE_NAME: smart-attendance-admin-users
+        COMPANY_TABLE_NAME: smart-attendance-companies
+        USERS_TABLE_NAME: smart-attendance-employee-users
+        ATTENDANCE_TABLE_NAME: smart-attendance-attends
+Resources:
+  SmartAttendanceApi:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: SmartAttendanceApi-Test
+      Handler: index.handler
+      Runtime: nodejs14.x
+      MemorySize: 256
+      Timeout: 30
+      Policies:
+      - AWSLambdaBasicExecutionRole
+      - AmazonDynamoDBFullAccess
+      Events:
+        Requests:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: any
+      CodeUri: s3://smartattendance-lambda/c472de8cd75ea95ed5c8cbc5268d9682

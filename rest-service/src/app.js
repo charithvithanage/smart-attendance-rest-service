@@ -1,0 +1,369 @@
+const AWS = require('aws-sdk')
+const { getAdminUsers, getAdminUserById, loginAdminUser, getUserByNIC, getAttendances, getTodayAttendanceByUser, getAttendancesByUser, addOrUpdateAdminUser, isAlreadyMaked, deleteUser, markInTime, adminChangePassword, getUsers, loginUser, isCompanyExist, updateUser, markOutTime, activateUser, registerCompany, registerUser, changePassword, getCompanyByID, isUserExist, addOrUpdateCompany } = require('./dynamo');
+const express = require('express');
+const bodyParser = require('body-parser');
+const e = require('express');
+const app = express();
+const { v4: uuidv4 } = require('uuid');
+require('dotenv').config();
+
+const port = process.env.PORT || 3000;
+
+// AWS.config.update({
+//     region: process.env.AWS_DEFAULT_REGION,
+//     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+//     secretAccessKey: process.env.AWS_SECRET_KEY_ID
+// })
+
+app.use(bodyParser.json());
+
+// Define a route to handle user login
+app.post('/admin/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await loginAdminUser(username, password)
+        if (user) {
+            // Return a separate user object without the password field
+            const { password, username, ...userData } = user;
+            res.json({ success: true, message: 'Login successful', data: userData });
+        } else {
+            res.json({ success: false, message: 'Invalid credentials' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Error processing request' });
+    }
+});
+
+app.get('/admin/users', async (req, res) => {
+    try {
+        // const result = await docClient.scan(params).promise();
+        const result = await getAdminUsers()
+        // Create a new array of user objects without the password field
+        const usersWithoutPasswords = result.Items.map(user => {
+            const { password, username, ...userWithoutPassword } = user;
+            return userWithoutPassword;
+        });
+        res.json({ success: true, data: usersWithoutPasswords });
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+app.get('/admin/users/:id', async (req, res) => {
+    try {
+        const id = req.params.id
+        const result = await getAdminUserById(id)
+        // Return a separate user object without the password field
+        const { password, username, ...userData } = result;
+        res.json({ success: true, data: userData });
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+
+app.post('/admin/updateUser', async (req, res) => {
+    try {
+        const user = req.body;
+        const result = await addOrUpdateAdminUser(user)
+        res.json({ success: true, data: result });
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+app.put('/admin/change-password', async (req, res) => {
+
+    try {
+        const { id, oldPassword, newPassword } = req.body;
+        const result = await adminChangePassword(id, oldPassword, newPassword)
+
+        if (result) {
+            res.json({ success: true, message: "Password changed successfully" });
+        } else {
+            res.json({ success: false, message: result });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+//Company Section
+app.get('/company/companies/:companyID', async (req, res) => {
+    try {
+        const companyID = req.params.companyID
+        const result = await getCompanyByID(companyID)
+
+        if (result) {
+            res.json({ success: true, message: "Company found", data: result });
+        } else {
+            res.json({ success: false, message: "No Company found for given ID" });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+app.post('/company/register', async (req, res) => {
+    try {
+        const company = req.body;
+        const result = await isCompanyExist(company.companyID)
+
+        if (result) {
+            res.json({ success: false, message: "Company Already Found", data: result });
+        } else {
+            const result = await registerCompany(company)
+            if (result) {
+                res.json({ success: true, message: 'Company Register successful', data: result });
+            } else {
+                res.json({ success: false, message: 'Company Not Registered' });
+            }
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+//User Section
+app.post('/user/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await loginUser(username, password)
+        if (user) {
+            if (user.userStatus) {
+                // Return a separate user object without the password field
+                const { password, username, ...userData } = user;
+                res.json({ success: true, message: 'Login successful', data: userData });
+            } else {
+                res.json({ success: false, message: 'Inactive User' });
+            }
+
+        } else {
+            res.json({ success: false, message: 'Invalid credentials' });
+        }
+    } catch (error) {
+        console.log("user/login",error)
+        res.json({ success: false, message: error });
+    
+        // res.status(500).json({ error: 'Error processing request' });
+    }
+});
+
+app.get('/user/users', async (req, res) => {
+    try {
+        // const result = await docClient.scan(params).promise();
+        const result = await getUsers()
+        // Create a new array of user objects without the password field
+        const usersWithoutPasswords = result.Items.map(user => {
+            const { password, username, ...userWithoutPassword } = user;
+            return userWithoutPassword;
+        });
+        res.json({ success: true, data: usersWithoutPasswords });
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+app.get('/user/users/:nic', async (req, res) => {
+    try {
+        const nic = req.params.nic
+        const result = await getUserByNIC(nic)
+        if (result) {
+            const { password, username, ...userData } = result;
+            res.json({ success: true, message: "User found", data: userData });
+        } else {
+            res.json({ success: false, message: "No User found for given NIC" });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+
+app.put('/user/updateUser', async (req, res) => {
+    try {
+        const user = req.body;
+        console.log("Request : " + user)
+        const result = await updateUser(user)
+        res.json({ success: true, message: "User updated successfully", data: result });
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+app.post('/user/register', async (req, res) => {
+    try {
+        const user = req.body;
+        const userExist = await isUserExist(user.nic)
+
+        if (userExist) {
+            res.json({ success: false, message: 'User Already Registered' });
+        } else {
+            const result = await registerUser(user)
+            if (result) {
+                // Return a separate user object without the password field
+                const { password, username, ...userData } = user;
+                res.json({ success: true, message: 'User Register successful', data: userData });
+            } else {
+                res.json({ success: false, message: 'User Not Registered' });
+            }
+        }
+
+
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+app.put('/user/change-password', async (req, res) => {
+
+    try {
+        const { nic, oldPassword, newPassword } = req.body;
+        const result = await changePassword(nic, oldPassword, newPassword)
+
+        if (result == "Password Changed Successfully") {
+            res.json({ success: true, message: result });
+        } else {
+            res.json({ success: false, message: result });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+app.put('/user/activateUser', async (req, res) => {
+
+    try {
+        const { nic, deviceID, userRole, userStatus } = req.body;
+        const result = await activateUser(nic, deviceID, userRole, userStatus)
+
+        if (result !== null) {
+            res.json({ success: true, data: result, message: "User status update successfully" });
+        } else {
+            res.json({ success: false, message: result });
+        }
+    } catch (error) {
+        res.json({ success: false, message: error });
+    }
+});
+
+app.delete('/user/deleteUser/:nic', async (req, res) => {
+
+    try {
+
+        const nic = req.params.nic;
+
+        const result = await deleteUser(nic)
+
+        if (result) {
+            res.json({ success: true, message: 'User Successfully Deleted' });
+        } else {
+            res.json({ success: false, message: 'Attendance Marked unsuccessfully' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+
+//Attendance Section
+app.post('/attendance/in', async (req, res) => {
+    try {
+        const attendance = req.body;
+        const isMaked = await isAlreadyMaked(attendance.userID, attendance.date)
+
+        console.log("Masked Value", isMaked)
+        if (isMaked) {
+            res.json({ success: false, message: 'Attendance Already Marked' });
+        } else {
+            const result = await markInTime(attendance)
+            if (result) {
+                res.json({ success: true, message: 'Attendance Marked successfully' });
+            } else {
+                res.json({ success: false, message: 'Attendance Marked unsuccessfully' });
+            }
+        }
+
+
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+app.put('/attendance/out', async (req, res) => {
+
+    try {
+        const attendance = req.body;
+        const result = await markOutTime(attendance.userID, attendance.date, attendance.outTime)
+        console.log("Result : " + result)
+
+        if (result == 'Attendance status updated successfully') {
+            res.json({ success: true, message: result });
+        } else {
+            res.json({ success: false, message: result });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+app.get('/attendance/attendances', async (req, res) => {
+    try {
+
+        const fromDate = req.query.fromDate;
+        const toDate = req.query.toDate;
+        // const result = await docClient.scan(params).promise();
+        const result = await getAttendances(fromDate, toDate)
+        res.json({ success: true, data: result });
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+app.get('/attendance/attendancesbyuser', async (req, res) => {
+    try {
+
+        const userID = req.query.userID;
+        const fromDate = req.query.fromDate;
+        const toDate = req.query.toDate;
+        // const result = await docClient.scan(params).promise();
+        const result = await getAttendancesByUser(userID, fromDate, toDate)
+        res.json({ success: true, data: result });
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+app.get('/attendance/today-attendancebyuser', async (req, res) => {
+    try {
+
+        const userID = req.query.userID;
+        const date = req.query.date;
+        // const result = await docClient.scan(params).promise();
+        const result = await getTodayAttendanceByUser(userID, date)
+
+        if (result != null) {
+            res.json({ success: true, data: result });
+        } else {
+            res.json({ success: false, message: "No attendance found" });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+app.get('/version', async (req, res) => {
+    try {
+        res.json({ success: true, data: "Hello" });
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+// Start the Express app
+// app.listen(port, () => {
+//     console.log(`App listening at http://localhost:${port}`);
+// });
+
+// Export your express server so you can import it in the lambda function.
+module.exports = app
