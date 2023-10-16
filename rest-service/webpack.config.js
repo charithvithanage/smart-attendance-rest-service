@@ -30,7 +30,6 @@ module.exports = {
 		new CopyWebpackPlugin({
 			patterns: [
 				{ from: 'template.yaml' },
-                { from: 'src/.env' },
 			]
 		}),
 		new CleanWebpackPlugin(),

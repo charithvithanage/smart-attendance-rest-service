@@ -122,13 +122,18 @@ app.post('/company/register', async (req, res) => {
 //User Section
 app.post('/user/login', async (req, res) => {
     try {
-        const { username, password } = req.body;
-        const user = await loginUser(username, password)
+        const { deviceID, username, password } = req.body;
+        const user = await loginUser( username, password)
         if (user) {
             if (user.userStatus) {
                 // Return a separate user object without the password field
                 const { password, username, ...userData } = user;
-                res.json({ success: true, message: 'Login successful', data: userData });
+
+                if (userData.deviceID != deviceID) {
+                    res.json({ success: false, message: 'Invalid Device ID' });
+                } else {
+                    res.json({ success: true, message: 'Login successful', data: userData });
+                }
             } else {
                 res.json({ success: false, message: 'Inactive User' });
             }
@@ -137,9 +142,9 @@ app.post('/user/login', async (req, res) => {
             res.json({ success: false, message: 'Invalid credentials' });
         }
     } catch (error) {
-        console.log("user/login",error)
+        console.log("user/login", error)
         res.json({ success: false, message: error });
-    
+
         // res.status(500).json({ error: 'Error processing request' });
     }
 });
@@ -229,8 +234,8 @@ app.put('/user/change-password', async (req, res) => {
 app.put('/user/activateUser', async (req, res) => {
 
     try {
-        const { nic, deviceID, userRole, userStatus } = req.body;
-        const result = await activateUser(nic, deviceID, userRole, userStatus)
+        const { nic, deviceID, userRole,userType, userStatus } = req.body;
+        const result = await activateUser(nic, deviceID, userRole, userType,userStatus)
 
         if (result !== null) {
             res.json({ success: true, data: result, message: "User status update successfully" });
@@ -356,9 +361,9 @@ app.get('/version', async (req, res) => {
 });
 
 // Start the Express app
-app.listen(port, () => {
-    console.log(`App listening at http://localhost:${port}`);
-});
+// app.listen(port, () => {
+//     console.log(`App listening at http://localhost:${port}`);
+// });
 
 // Export your express server so you can import it in the lambda function.
 module.exports = app

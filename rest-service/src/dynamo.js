@@ -8,11 +8,11 @@ const COMPANY_TABLE_NAME = process.env.COMPANY_TABLE_NAME
 const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME
 const ATTENDANCE_TABLE_NAME = process.env.ATTENDANCE_TABLE_NAME
 
-AWS.config.update({
-    region: process.env.AWS_DEFAULT_REGION,
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_KEY_ID
-})
+// AWS.config.update({
+//     region: process.env.AWS_DEFAULT_REGION,
+//     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+//     secretAccessKey: process.env.AWS_SECRET_KEY_ID
+// })
 
 const docClient = new AWS.DynamoDB.DocumentClient();
 
@@ -334,7 +334,7 @@ const changePassword = async (nic, oldPassword, newPassword) => {
 
 
 
-const activateUser = async (nic, deviceID, userRole, userStatus) => {
+const activateUser = async (nic, deviceID, userRole, userType,userStatus) => {
     try {
         const isExist = await isUserExist(nic);
 
@@ -345,11 +345,12 @@ const activateUser = async (nic, deviceID, userRole, userStatus) => {
             const updateParams = {
                 TableName: USERS_TABLE_NAME,
                 Key: { nic },
-                UpdateExpression: 'set userStatus = :userStatus, deviceID = :deviceID, userRole = :userRole',
+                UpdateExpression: 'set userStatus = :userStatus, deviceID = :deviceID, userRole = :userRole, userType = :userType',
                 ExpressionAttributeValues: {
                     ':userStatus': userStatus,
                     ':deviceID': deviceID,
                     ':userRole': userRole,
+                    ':userType': userType,
                 },
                 ReturnValues: 'ALL_NEW',
             };
