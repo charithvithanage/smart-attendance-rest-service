@@ -9,6 +9,7 @@ const COMPANY_TABLE_NAME = process.env.COMPANY_TABLE_NAME
 const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME
 const ATTENDANCE_TABLE_NAME = process.env.ATTENDANCE_TABLE_NAME
 const DROID_ID_NOTIFICATIONS_TABLE_NAME = process.env.DROID_ID_NOTIFICATIONS_TABLE_NAME
+const DROID_AI_USERS_TABLE_NAME = process.env.DROID_AI_USERS_TABLE_NAME
 
 //Uncomment for localhost
 //Comment for live
@@ -23,7 +24,6 @@ const docClient = new AWS.DynamoDB.DocumentClient();
 
 //Droid AI Api
 //Notifications Apis
-
 //Save Notifications
 async function saveNotification(notification) {
  
@@ -50,6 +50,47 @@ const getNotifications = async () => {
     }
 
     return result
+}
+
+//Users Endpoints
+async function registerDroidAIUser(user) {
+    const params = {
+        TableName: DROID_AI_USERS_TABLE_NAME,
+        Item: user
+    };
+
+    return await docClient.put(params).promise();
+}
+
+const isDroidAIUserExist = async (nic) => {
+    try {
+        const result = await getDroidAIUserByNIC(nic);
+
+        if (result) {
+            console.log("Result Exist : " + result);
+            return true;
+        } else {
+            console.log("No Record Found");
+            return false;
+        }
+    } catch (error) {
+        console.error('Error getting user by NIC:', error);
+    }
+}
+
+const getDroidAIUserByNIC = async (nic) => {
+    const params = {
+        TableName: DROID_AI_USERS_TABLE_NAME,
+        Key: {
+            nic: nic
+        }
+    };
+    try {
+        const result = await docClient.get(params).promise();
+        return result.Item
+    } catch (error) {
+        console.error('Error getting user by NIC:', error);
+    }
 }
 
 const getAdminUsers = async () => {
@@ -683,7 +724,9 @@ module.exports = {
     getTodayAttendanceByUser,
     deleteUser,
     getNotifications,
-    saveNotification
+    saveNotification,
+    registerDroidAIUser,
+    isDroidAIUserExist
 }
 
 // addOrUpdateCompany(company)

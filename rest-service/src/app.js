@@ -1,5 +1,5 @@
 const AWS = require('aws-sdk')
-const {saveNotification,getNotifications, getAdminUsers, getAdminUserById, loginAdminUser, getUserByNIC, getAttendances, getTodayAttendanceByUser, getAttendancesByUser, addOrUpdateAdminUser, isAlreadyMaked, deleteUser, markInTime, adminChangePassword, getUsers, loginUser, isCompanyExist, updateUser, markOutTime, activateUser, registerCompany, registerUser, changePassword, getCompanyByID, isUserExist, addOrUpdateCompany } = require('./dynamo');
+const {isDroidAIUserExist,registerDroidAIUser,saveNotification,getNotifications, getAdminUsers, getAdminUserById, loginAdminUser, getUserByNIC, getAttendances, getTodayAttendanceByUser, getAttendancesByUser, addOrUpdateAdminUser, isAlreadyMaked, deleteUser, markInTime, adminChangePassword, getUsers, loginUser, isCompanyExist, updateUser, markOutTime, activateUser, registerCompany, registerUser, changePassword, getCompanyByID, isUserExist, addOrUpdateCompany } = require('./dynamo');
 const express = require('express');
 const bodyParser = require('body-parser');
 const e = require('express');
@@ -40,6 +40,32 @@ app.get('/droidai/notifications', async (req, res) => {
         } else {
             res.json({ success: false, message: "No Notifications found" });
         }
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+//User Endpoints
+//Register User Endpoint
+app.post('/droidai/register', async (req, res) => {
+    try {
+        const user = req.body;
+        const userExist = await isDroidAIUserExist(user.nic)
+        console.log('User exist:', userExist);
+        if (userExist) {
+            res.json({ success: false, message: 'User Already Registered' });
+        } else {
+            const result = await registerDroidAIUser(user)
+            if (result) {
+                // Return a separate user object without the password field
+                const { password, username, ...userData } = user;
+                res.json({ success: true, message: 'User Register successful', data: userData });
+            } else {
+                res.json({ success: false, message: 'User Not Registered' });
+            }
+        }
+
+
     } catch (error) {
         res.status(500).json({ error: 'Error fetching data from DynamoDB' });
     }
