@@ -1,5 +1,6 @@
 const AWS = require('aws-sdk');
 const e = require('express');
+
 require('dotenv').config();
 
 
@@ -7,14 +8,49 @@ const ADMIN_USERS_TABLE_NAME = process.env.ADMIN_USERS_TABLE_NAME
 const COMPANY_TABLE_NAME = process.env.COMPANY_TABLE_NAME
 const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME
 const ATTENDANCE_TABLE_NAME = process.env.ATTENDANCE_TABLE_NAME
+const DROID_ID_NOTIFICATIONS_TABLE_NAME = process.env.DROID_ID_NOTIFICATIONS_TABLE_NAME
 
-// AWS.config.update({
-//     region: process.env.AWS_DEFAULT_REGION,
-//     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-//     secretAccessKey: process.env.AWS_SECRET_KEY_ID
-// })
+//Uncomment for localhost
+//Comment for live
+AWS.config.update({
+    region: process.env.AWS_DEFAULT_REGION,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_KEY_ID
+})
 
 const docClient = new AWS.DynamoDB.DocumentClient();
+
+
+//Droid AI Api
+//Notifications Apis
+
+//Save Notifications
+async function saveNotification(notification) {
+ 
+    const params = {
+        TableName: DROID_ID_NOTIFICATIONS_TABLE_NAME,
+        Item: notification
+    };
+    var result = await docClient.put(params).promise();
+    console.log('Scan result:',result);
+    return result
+}
+
+//Get Notifications
+const getNotifications = async () => {
+    const params = {
+        TableName: DROID_ID_NOTIFICATIONS_TABLE_NAME,
+    };
+    var result
+    try {
+        result = await docClient.scan(params).promise();
+        console.log('Scan result:', result.Items);
+    } catch (error) {
+        console.error('Error scanning table:', error);
+    }
+
+    return result
+}
 
 const getAdminUsers = async () => {
     const params = {
@@ -74,8 +110,9 @@ const adminChangePassword = async (id, oldPassword, newPassword) => {
             return 'User not found';
         }
 
+        console.log("Old PWD "+oldPassword)
         console.log(user)
-        if (user.password != oldPassword) {
+        if (user.password !== oldPassword) {
             return 'Invalid old password';
         }
 
@@ -91,7 +128,7 @@ const adminChangePassword = async (id, oldPassword, newPassword) => {
         };
 
         await docClient.update(updateParams).promise();
-        return true
+        return "Password Changed Successfully"
 
     } catch (error) {
         return error;
@@ -586,6 +623,12 @@ const getAttendances = async (fromDate, toDate) => {
 }
 
 
+
+const notification = {
+    "title": "Test Message",
+    "message": "This is a Test Message"
+}
+
 const adminUser = {
     "employeeID": "SHDL00002",
     "firstName": "Charith",
@@ -638,7 +681,9 @@ module.exports = {
     getAttendances,
     getAttendancesByUser,
     getTodayAttendanceByUser,
-    deleteUser
+    deleteUser,
+    getNotifications,
+    saveNotification
 }
 
 // addOrUpdateCompany(company)

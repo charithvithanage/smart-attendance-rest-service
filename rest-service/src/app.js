@@ -1,5 +1,5 @@
 const AWS = require('aws-sdk')
-const { getAdminUsers, getAdminUserById, loginAdminUser, getUserByNIC, getAttendances, getTodayAttendanceByUser, getAttendancesByUser, addOrUpdateAdminUser, isAlreadyMaked, deleteUser, markInTime, adminChangePassword, getUsers, loginUser, isCompanyExist, updateUser, markOutTime, activateUser, registerCompany, registerUser, changePassword, getCompanyByID, isUserExist, addOrUpdateCompany } = require('./dynamo');
+const {saveNotification,getNotifications, getAdminUsers, getAdminUserById, loginAdminUser, getUserByNIC, getAttendances, getTodayAttendanceByUser, getAttendancesByUser, addOrUpdateAdminUser, isAlreadyMaked, deleteUser, markInTime, adminChangePassword, getUsers, loginUser, isCompanyExist, updateUser, markOutTime, activateUser, registerCompany, registerUser, changePassword, getCompanyByID, isUserExist, addOrUpdateCompany } = require('./dynamo');
 const express = require('express');
 const bodyParser = require('body-parser');
 const e = require('express');
@@ -11,6 +11,40 @@ const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
+//Droid AI Api
+//Notifications Apis
+
+//Save Notifications
+app.post('/droidai/savenotification', async (req, res) => {
+    try {
+        const notification = req.body;
+        notification.id=uuidv4()
+        const result = await saveNotification(notification)
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error('Error saving notification to DynamoDB:', error);
+        res.status(500).json({ error: 'Error saving notification to DynamoDB' });
+    }
+});
+
+//Get Notifications
+app.get('/droidai/notifications', async (req, res) => {
+    try {
+        // const result = await docClient.scan(params).promise();
+        const result = await getNotifications()
+        const notifications = result.Items.map(notification => {
+                    return notification;
+        });
+        if (result != null) {
+            res.json({ success: true, data: notifications });
+        } else {
+            res.json({ success: false, message: "No Notifications found" });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
 // Define a route to handle user login
 app.post('/admin/login', async (req, res) => {
     try {
@@ -21,7 +55,7 @@ app.post('/admin/login', async (req, res) => {
             const { password, username, ...userData } = user;
             res.json({ success: true, message: 'Login successful', data: userData });
         } else {
-            res.json({ success: false, message: 'Invalid credentials' });
+            res.json({ success: false, message: 'Invalid credentials 1' });
         }
     } catch (error) {
         console.log(error)
@@ -64,6 +98,7 @@ app.post('/admin/updateUser', async (req, res) => {
         res.json({ success: true, data: result });
     } catch (error) {
         res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+        
     }
 });
 
@@ -72,9 +107,9 @@ app.put('/admin/change-password', async (req, res) => {
     try {
         const { id, oldPassword, newPassword } = req.body;
         const result = await adminChangePassword(id, oldPassword, newPassword)
-
-        if (result) {
-            res.json({ success: true, message: "Password changed successfully" });
+        console.log(result)
+        if (result=="Password Changed Successfully") {
+            res.json({ success: true, message: result });
         } else {
             res.json({ success: false, message: result });
         }
@@ -360,10 +395,12 @@ app.get('/version', async (req, res) => {
     }
 });
 
+//Uncomment for localhost
+//Comment for live
 // Start the Express app
-// app.listen(port, () => {
-//     console.log(`App listening at http://localhost:${port}`);
-// });
+app.listen(port, () => {
+    console.log(`App listening at http://localhost:${port}`);
+});
 
 // Export your express server so you can import it in the lambda function.
 module.exports = app
