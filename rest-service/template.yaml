@@ -10,7 +10,7 @@ Globals:
         COMPANY_TABLE_NAME: smart-attendance-companies
         USERS_TABLE_NAME: smart-attendance-employee-users
         ATTENDANCE_TABLE_NAME: smart-attendance-attends
-        DROID_ID_NOTIFICATIONS_TABLE_NAME: droid-id-notifications
+        DROID_ID_NOTIFICATIONS_TABLE_NAME: droid-ai-notifications
         DROID_AI_USERS_TABLE_NAME: droid-ai-users
 
 Resources:

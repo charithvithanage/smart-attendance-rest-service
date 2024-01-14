@@ -13,11 +13,11 @@ const DROID_AI_USERS_TABLE_NAME = process.env.DROID_AI_USERS_TABLE_NAME
 
 //Uncomment for localhost
 //Comment for live
-AWS.config.update({
-    region: process.env.AWS_DEFAULT_REGION,
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_KEY_ID
-})
+// AWS.config.update({
+//     region: process.env.AWS_DEFAULT_REGION,
+//     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+//     secretAccessKey: process.env.AWS_SECRET_KEY_ID
+// })
 
 const docClient = new AWS.DynamoDB.DocumentClient();
 
@@ -26,13 +26,13 @@ const docClient = new AWS.DynamoDB.DocumentClient();
 //Notifications Apis
 //Save Notifications
 async function saveNotification(notification) {
- 
+
     const params = {
         TableName: DROID_ID_NOTIFICATIONS_TABLE_NAME,
         Item: notification
     };
     var result = await docClient.put(params).promise();
-    console.log('Scan result:',result);
+    console.log('Scan result:', result);
     return result
 }
 
@@ -53,6 +53,7 @@ const getNotifications = async () => {
 }
 
 //Users Endpoints
+//Reginster Endpoints
 async function registerDroidAIUser(user) {
     const params = {
         TableName: DROID_AI_USERS_TABLE_NAME,
@@ -90,6 +91,45 @@ const getDroidAIUserByNIC = async (nic) => {
         return result.Item
     } catch (error) {
         console.error('Error getting user by NIC:', error);
+    }
+}
+
+//Login Endpoint
+const loginDroidAIUser = async (username, password) => {
+
+    const params = {
+        TableName: DROID_AI_USERS_TABLE_NAME,
+    };
+    const result = await docClient.scan(params).promise();
+    const users = result.Items;
+
+    var loggedInUser = users.find(u => u.userName === username && u.password === password);
+    return loggedInUser
+}
+
+async function updateDeviceToken(deviceToken, nic) {
+    try {
+        const isExist = await isDroidAIUserExist(nic);
+
+        if (!isExist) {
+            return 'User not found';
+        } else {
+            //Update user status in DynamoDB
+            const updateParams = {
+                TableName: DROID_AI_USERS_TABLE_NAME,
+                Key: { nic },
+                UpdateExpression: 'set deviceToken = :deviceToken',
+                ExpressionAttributeValues: {
+                    ':deviceToken': deviceToken
+                },
+            };
+
+            const result = await docClient.update(updateParams).promise();
+            console.log("Returned Result : " + result.Attributes)
+            return result.Attributes
+        }
+    } catch (error) {
+        return error;
     }
 }
 
@@ -151,7 +191,7 @@ const adminChangePassword = async (id, oldPassword, newPassword) => {
             return 'User not found';
         }
 
-        console.log("Old PWD "+oldPassword)
+        console.log("Old PWD " + oldPassword)
         console.log(user)
         if (user.password !== oldPassword) {
             return 'Invalid old password';
@@ -412,7 +452,7 @@ const changePassword = async (nic, oldPassword, newPassword) => {
 
 
 
-const activateUser = async (nic, deviceID, userRole, userType,userStatus) => {
+const activateUser = async (nic, deviceID, userRole, userType, userStatus) => {
     try {
         const isExist = await isUserExist(nic);
 
@@ -582,7 +622,7 @@ const getAttendancesByUser = async (userID, fromDate, toDate) => {
         });
 
         return filteredData
-    }  catch (error) {
+    } catch (error) {
         console.error('Error scanning table:', error);
     }
 
@@ -656,7 +696,7 @@ const getAttendances = async (fromDate, toDate) => {
         });
 
         return filteredData
-    }  catch (error) {
+    } catch (error) {
         console.error('Error scanning table:', error);
     }
 
@@ -726,7 +766,9 @@ module.exports = {
     getNotifications,
     saveNotification,
     registerDroidAIUser,
-    isDroidAIUserExist
+    isDroidAIUserExist,
+    loginDroidAIUser,
+    updateDeviceToken
 }
 
 // addOrUpdateCompany(company)

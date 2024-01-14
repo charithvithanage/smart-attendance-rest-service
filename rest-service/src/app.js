@@ -1,5 +1,5 @@
 const AWS = require('aws-sdk')
-const {isDroidAIUserExist,registerDroidAIUser,saveNotification,getNotifications, getAdminUsers, getAdminUserById, loginAdminUser, getUserByNIC, getAttendances, getTodayAttendanceByUser, getAttendancesByUser, addOrUpdateAdminUser, isAlreadyMaked, deleteUser, markInTime, adminChangePassword, getUsers, loginUser, isCompanyExist, updateUser, markOutTime, activateUser, registerCompany, registerUser, changePassword, getCompanyByID, isUserExist, addOrUpdateCompany } = require('./dynamo');
+const {loginDroidAIUser,isDroidAIUserExist,registerDroidAIUser,saveNotification,getNotifications, getAdminUsers, getAdminUserById, loginAdminUser, getUserByNIC, getAttendances, getTodayAttendanceByUser, getAttendancesByUser, addOrUpdateAdminUser, isAlreadyMaked, deleteUser, markInTime, adminChangePassword, getUsers, loginUser, isCompanyExist, updateUser, markOutTime, activateUser, registerCompany, registerUser, changePassword, getCompanyByID, isUserExist, addOrUpdateCompany, updateDeviceToken } = require('./dynamo');
 const express = require('express');
 const bodyParser = require('body-parser');
 const e = require('express');
@@ -70,6 +70,25 @@ app.post('/droidai/register', async (req, res) => {
         res.status(500).json({ error: 'Error fetching data from DynamoDB' });
     }
 });
+
+//DroidAI Login Endpoint
+app.post('/droidai/login', async (req, res) => {
+    try {
+        const { deviceToken, username, password } = req.body;
+        const user = await loginDroidAIUser( username, password)
+        if (user) {
+            const result = await updateDeviceToken(deviceToken,user.nic)
+                res.json({ success: true, message: 'Login successful', data: result });
+        } else {
+            res.json({ success: false, message: 'Invalid credentials' });
+        }
+    } catch (error) {
+        res.json({ success: false, message: error });
+
+        // res.status(500).json({ error: 'Error processing request' });
+    }
+});
+
 
 // Define a route to handle user login
 app.post('/admin/login', async (req, res) => {
@@ -424,9 +443,9 @@ app.get('/version', async (req, res) => {
 //Uncomment for localhost
 //Comment for live
 // Start the Express app
-app.listen(port, () => {
-    console.log(`App listening at http://localhost:${port}`);
-});
+// app.listen(port, () => {
+//     console.log(`App listening at http://localhost:${port}`);
+// });
 
 // Export your express server so you can import it in the lambda function.
 module.exports = app
