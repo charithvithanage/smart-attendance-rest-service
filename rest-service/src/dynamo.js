@@ -10,6 +10,7 @@ const USERS_TABLE_NAME = process.env.USERS_TABLE_NAME
 const ATTENDANCE_TABLE_NAME = process.env.ATTENDANCE_TABLE_NAME
 const DROID_ID_NOTIFICATIONS_TABLE_NAME = process.env.DROID_ID_NOTIFICATIONS_TABLE_NAME
 const DROID_AI_USERS_TABLE_NAME = process.env.DROID_AI_USERS_TABLE_NAME
+const DROID_AI_INQUIRY_TABLE_NAME = process.env.DROID_AI_INQUIRY_TABLE_NAME
 
 //Uncomment for localhost
 //Comment for live
@@ -94,7 +95,7 @@ const getDroidAIUserByNIC = async (nic) => {
     }
 }
 
-//Login Endpoint
+//Droid User Login Endpoint
 const loginDroidAIUser = async (username, password) => {
 
     const params = {
@@ -132,6 +133,18 @@ async function updateDeviceToken(deviceToken, nic) {
         return error;
     }
 }
+
+//Droid User Submit Inquiry Endpoint
+async function submitInquiry(inquiry) {
+    const params = {
+        TableName: DROID_AI_INQUIRY_TABLE_NAME,
+        Item: inquiry
+    };
+
+    const result = await docClient.put(params).promise();
+    return true
+}
+
 
 const getAdminUsers = async () => {
     const params = {
@@ -768,7 +781,8 @@ module.exports = {
     registerDroidAIUser,
     isDroidAIUserExist,
     loginDroidAIUser,
-    updateDeviceToken
+    updateDeviceToken,
+    submitInquiry
 }
 
 // addOrUpdateCompany(company)

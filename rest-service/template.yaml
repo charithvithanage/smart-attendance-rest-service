@@ -12,6 +12,7 @@ Globals:
         ATTENDANCE_TABLE_NAME: smart-attendance-attends
         DROID_ID_NOTIFICATIONS_TABLE_NAME: droid-ai-notifications
         DROID_AI_USERS_TABLE_NAME: droid-ai-users
+        DROID_AI_INQUIRY_TABLE_NAME: droid-ai-inquiry
 
 Resources:
   SmartAttendanceApi:

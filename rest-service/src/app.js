@@ -1,5 +1,5 @@
 const AWS = require('aws-sdk')
-const {loginDroidAIUser,isDroidAIUserExist,registerDroidAIUser,saveNotification,getNotifications, getAdminUsers, getAdminUserById, loginAdminUser, getUserByNIC, getAttendances, getTodayAttendanceByUser, getAttendancesByUser, addOrUpdateAdminUser, isAlreadyMaked, deleteUser, markInTime, adminChangePassword, getUsers, loginUser, isCompanyExist, updateUser, markOutTime, activateUser, registerCompany, registerUser, changePassword, getCompanyByID, isUserExist, addOrUpdateCompany, updateDeviceToken } = require('./dynamo');
+const { submitInquiry, loginDroidAIUser, isDroidAIUserExist, registerDroidAIUser, saveNotification, getNotifications, getAdminUsers, getAdminUserById, loginAdminUser, getUserByNIC, getAttendances, getTodayAttendanceByUser, getAttendancesByUser, addOrUpdateAdminUser, isAlreadyMaked, deleteUser, markInTime, adminChangePassword, getUsers, loginUser, isCompanyExist, updateUser, markOutTime, activateUser, registerCompany, registerUser, changePassword, getCompanyByID, isUserExist, addOrUpdateCompany, updateDeviceToken } = require('./dynamo');
 const express = require('express');
 const bodyParser = require('body-parser');
 const e = require('express');
@@ -18,7 +18,7 @@ app.use(bodyParser.json());
 app.post('/droidai/savenotification', async (req, res) => {
     try {
         const notification = req.body;
-        notification.id=uuidv4()
+        notification.id = uuidv4()
         const result = await saveNotification(notification)
         res.json({ success: true, data: result });
     } catch (error) {
@@ -33,7 +33,7 @@ app.get('/droidai/notifications', async (req, res) => {
         // const result = await docClient.scan(params).promise();
         const result = await getNotifications()
         const notifications = result.Items.map(notification => {
-                    return notification;
+            return notification;
         });
         if (result != null) {
             res.json({ success: true, data: notifications });
@@ -75,10 +75,10 @@ app.post('/droidai/register', async (req, res) => {
 app.post('/droidai/login', async (req, res) => {
     try {
         const { deviceToken, username, password } = req.body;
-        const user = await loginDroidAIUser( username, password)
+        const user = await loginisDroidAIUserExistDroidAIUser(username, password)
         if (user) {
-            const result = await updateDeviceToken(deviceToken,user.nic)
-                res.json({ success: true, message: 'Login successful', data: result });
+            const result = await updateDeviceToken(deviceToken, user.nic)
+            res.json({ success: true, message: 'Login successful', data: result });
         } else {
             res.json({ success: false, message: 'Invalid credentials' });
         }
@@ -88,6 +88,31 @@ app.post('/droidai/login', async (req, res) => {
         // res.status(500).json({ error: 'Error processing request' });
     }
 });
+
+//Droid AI submit inquiry Endpoint
+app.post('/droidai/submitinquiry', async (req, res) => {
+    try {
+        const inquiry = req.body;
+
+        const userExist = await isDroidAIUserExist(inquiry.createdUserNIC)
+
+        if (userExist) {
+            inquiry.id = uuidv4()
+            inquiry.createdDate = new Date().toISOString(); // Set the createdDate to the current date and time
+            console.log("Inquiry Value", inquiry)
+            const result = await submitInquiry(inquiry)
+            res.json({ success: true, message: 'Inquiry Submitted successfully' });
+        } else {
+            res.json({ success: false, message: 'No user found for given nic' });
+        }
+
+    } catch (error) {
+        res.json({ success: false, message: error });
+
+        // res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
 
 
 // Define a route to handle user login
@@ -100,7 +125,7 @@ app.post('/admin/login', async (req, res) => {
             const { password, username, ...userData } = user;
             res.json({ success: true, message: 'Login successful', data: userData });
         } else {
-            res.json({ success: false, message: 'Invalid credentials 1' });
+            res.json({ success: false, message: 'Invalid credentials' });
         }
     } catch (error) {
         console.log(error)
@@ -143,7 +168,7 @@ app.post('/admin/updateUser', async (req, res) => {
         res.json({ success: true, data: result });
     } catch (error) {
         res.status(500).json({ error: 'Error fetching data from DynamoDB' });
-        
+
     }
 });
 
@@ -153,7 +178,7 @@ app.put('/admin/change-password', async (req, res) => {
         const { id, oldPassword, newPassword } = req.body;
         const result = await adminChangePassword(id, oldPassword, newPassword)
         console.log(result)
-        if (result=="Password Changed Successfully") {
+        if (result == "Password Changed Successfully") {
             res.json({ success: true, message: result });
         } else {
             res.json({ success: false, message: result });
@@ -203,7 +228,7 @@ app.post('/company/register', async (req, res) => {
 app.post('/user/login', async (req, res) => {
     try {
         const { deviceID, username, password } = req.body;
-        const user = await loginUser( username, password)
+        const user = await loginUser(username, password)
         if (user) {
             if (user.userStatus) {
                 // Return a separate user object without the password field
@@ -314,8 +339,8 @@ app.put('/user/change-password', async (req, res) => {
 app.put('/user/activateUser', async (req, res) => {
 
     try {
-        const { nic, deviceID, userRole,userType, userStatus } = req.body;
-        const result = await activateUser(nic, deviceID, userRole, userType,userStatus)
+        const { nic, deviceID, userRole, userType, userStatus } = req.body;
+        const result = await activateUser(nic, deviceID, userRole, userType, userStatus)
 
         if (result !== null) {
             res.json({ success: true, data: result, message: "User status update successfully" });
