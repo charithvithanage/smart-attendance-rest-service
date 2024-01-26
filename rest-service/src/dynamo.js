@@ -1,5 +1,7 @@
 const AWS = require('aws-sdk');
 const e = require('express');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const { PutObjectCommand, S3Client } = require('@aws-sdk/client-s3');
 
 require('dotenv').config();
 
@@ -19,11 +21,36 @@ const DROID_AI_INQUIRY_TABLE_NAME = process.env.DROID_AI_INQUIRY_TABLE_NAME
 //     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
 //     secretAccessKey: process.env.AWS_SECRET_KEY_ID
 // })
+// const config={ credentials: { accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_KEY_ID } }
+// const s3client = new S3Client(config)
 
 const docClient = new AWS.DynamoDB.DocumentClient();
-
+//For live deployment
+const s3client = new S3Client({})
 
 //Droid AI Api
+
+//S3
+async function getPresignedUrl(filename) {
+    try {
+
+        const command = new PutObjectCommand({
+            Bucket: "droid-ai-s3-bucket",
+            Key: filename,
+            ACL: "public-read"
+        })
+
+        const url = await getSignedUrl(s3client, command, { expiresIn: 300 })
+
+        return url
+
+    } catch (err) {
+        console.log(err)
+        return undefined
+    }
+}
+
+
 //Notifications Apis
 //Save Notifications
 async function saveNotification(notification) {
@@ -51,6 +78,67 @@ const getNotifications = async () => {
     }
 
     return result
+}
+
+//Get Inquiries
+const getInquiries = async () => {
+    const params = {
+        TableName: DROID_AI_INQUIRY_TABLE_NAME,
+    };
+    var result
+    try {
+        result = await docClient.scan(params).promise();
+        console.log('Scan result:', result.Items);
+    } catch (error) {
+        console.error('Error scanning table:', error);
+    }
+
+    return result
+}
+
+//Get Inquiries By Farmer
+const getInquiriesByFarmer = async (createdUserNIC) => {
+    const params = {
+        TableName: DROID_AI_INQUIRY_TABLE_NAME,
+        FilterExpression: '#createdUserNIC = :createdUserNIC', // Corrected FilterExpression
+        ExpressionAttributeNames: {
+            '#createdUserNIC': 'createdUserNIC',
+        },
+        ExpressionAttributeValues: {
+            ':createdUserNIC': createdUserNIC,
+        },
+    };
+    var result;
+    try {
+        result = await docClient.scan(params).promise();
+        console.log('Scan result:', result.Items);
+    } catch (error) {
+        console.error('Error scanning table:', error);
+    }
+
+    return result;
+}
+
+const getInquiriesByStatus = async (status) => {
+    const params = {
+        TableName: DROID_AI_INQUIRY_TABLE_NAME,
+        FilterExpression: '#status = :status', // Corrected FilterExpression
+        ExpressionAttributeNames: {
+            '#status': 'status',
+        },
+        ExpressionAttributeValues: {
+            ':status': status,
+        },
+    };
+    var result;
+    try {
+        result = await docClient.scan(params).promise();
+        console.log('Scan result:', result.Items);
+    } catch (error) {
+        console.error('Error scanning table:', error);
+    }
+
+    return result;
 }
 
 //Users Endpoints
@@ -782,7 +870,11 @@ module.exports = {
     isDroidAIUserExist,
     loginDroidAIUser,
     updateDeviceToken,
-    submitInquiry
+    submitInquiry,
+    getPresignedUrl,
+    getInquiriesByFarmer,
+    getInquiries,
+    getInquiriesByStatus
 }
 
 // addOrUpdateCompany(company)

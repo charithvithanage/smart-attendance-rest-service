@@ -1,5 +1,5 @@
 const AWS = require('aws-sdk')
-const { submitInquiry, loginDroidAIUser, isDroidAIUserExist, registerDroidAIUser, saveNotification, getNotifications, getAdminUsers, getAdminUserById, loginAdminUser, getUserByNIC, getAttendances, getTodayAttendanceByUser, getAttendancesByUser, addOrUpdateAdminUser, isAlreadyMaked, deleteUser, markInTime, adminChangePassword, getUsers, loginUser, isCompanyExist, updateUser, markOutTime, activateUser, registerCompany, registerUser, changePassword, getCompanyByID, isUserExist, addOrUpdateCompany, updateDeviceToken } = require('./dynamo');
+const { getInquiriesByStatus, getInquiries, getInquiriesByFarmer, getPresignedUrl, submitInquiry, loginDroidAIUser, isDroidAIUserExist, registerDroidAIUser, saveNotification, getNotifications, getAdminUsers, getAdminUserById, loginAdminUser, getUserByNIC, getAttendances, getTodayAttendanceByUser, getAttendancesByUser, addOrUpdateAdminUser, isAlreadyMaked, deleteUser, markInTime, adminChangePassword, getUsers, loginUser, isCompanyExist, updateUser, markOutTime, activateUser, registerCompany, registerUser, changePassword, getCompanyByID, isUserExist, addOrUpdateCompany, updateDeviceToken } = require('./dynamo');
 const express = require('express');
 const bodyParser = require('body-parser');
 const e = require('express');
@@ -12,8 +12,21 @@ const port = process.env.PORT || 3000;
 app.use(bodyParser.json());
 
 //Droid AI Api
-//Notifications Apis
 
+//Get S3 Url
+app.post('/droidai/fileupload', async (req, res) => {
+    try {
+        const filename = req.body.filename;
+        const result = await getPresignedUrl(filename)
+        console.log(filename)
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error('Error saving notification to DynamoDB:', error);
+        res.status(500).json({ error: 'Error saving notification to DynamoDB' });
+    }
+})
+
+//Notifications Apis
 //Save Notifications
 app.post('/droidai/savenotification', async (req, res) => {
     try {
@@ -24,6 +37,68 @@ app.post('/droidai/savenotification', async (req, res) => {
     } catch (error) {
         console.error('Error saving notification to DynamoDB:', error);
         res.status(500).json({ error: 'Error saving notification to DynamoDB' });
+    }
+});
+
+//Get Inquiries by Farmer
+app.get('/droidai/get-inquiries-by-farmer/:createdUserNIC', async (req, res) => {
+    try {
+        const nic = req.params.createdUserNIC;
+        const userExist = await isDroidAIUserExist(nic)
+        console.log('User exist:', userExist);
+        if (userExist) {
+            const result = await getInquiriesByFarmer(nic)
+            const inquiries = result.Items.map(inquiry => {
+                return inquiry;
+            });
+            if (result != null) {
+                res.json({ success: true, data: inquiries });
+            } else {
+                res.json({ success: false, message: "No Inquiries found" });
+            }
+        } else {
+            res.json({ success: false, message: "No User found" });
+        }
+
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+//Get Inquiries by Status
+app.get('/droidai/get-inquiries-by-status/:status', async (req, res) => {
+    try {
+        const status = req.params.status;
+        const result = await getInquiriesByStatus(status)
+        const inquiries = result.Items.map(inquiry => {
+            return inquiry;
+        });
+        if (inquiries != 0) {
+            res.json({ success: true, data: inquiries });
+        } else {
+            res.json({ success: false, message: "No Inquiries found" });
+        }
+
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
+    }
+});
+
+//Get Inquiries by Farmer
+app.get('/droidai/get-inquiries', async (req, res) => {
+    try {
+        // const result = await docClient.scan(params).promise();
+        const result = await getInquiries()
+        const inquiries = result.Items.map(notification => {
+            return notification;
+        });
+        if (result != null) {
+            res.json({ success: true, data: inquiries });
+        } else {
+            res.json({ success: false, message: "No Inquiries found" });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching data from DynamoDB' });
     }
 });
 

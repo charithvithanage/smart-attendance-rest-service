@@ -26,6 +26,8 @@ Resources:
       Policies:
         - AWSLambdaBasicExecutionRole
         - AmazonDynamoDBFullAccess
+        - S3FullAccessPolicy:
+            BucketName: droid-ai-s3-bucket
       Events:
         Requests:
           Type: HttpApi
